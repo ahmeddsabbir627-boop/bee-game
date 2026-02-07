@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Bee Attack Game</title>
+<title>Bee Collision Game</title>
 
 <style>
 body {
     margin: 0;
     overflow: hidden;
-    background: linear-gradient(#1b2735, #090a0f);
+    background: radial-gradient(circle, #243949, #000);
     font-family: Arial, sans-serif;
     color: white;
 }
@@ -26,7 +26,7 @@ body {
 #bar {
     width: 180px;
     height: 12px;
-    background: #400;
+    background: #500;
     border-radius: 10px;
     overflow: hidden;
 }
@@ -35,25 +35,6 @@ body {
     height: 100%;
     width: 100%;
     background: linear-gradient(to right, lime, yellow);
-}
-
-#menu {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-}
-
-button, select {
-    padding: 12px 20px;
-    font-size: 18px;
-    margin: 8px;
-    border-radius: 8px;
-    border: none;
 }
 
 #game {
@@ -74,85 +55,29 @@ button, select {
 .bee {
     position: absolute;
     width: 70px;
-    z-index: 9999;
 }
 </style>
 </head>
 
 <body>
 
-<!-- MENU -->
-<div id="menu">
-    <h1>🐝 Bee Attack</h1>
-    <select id="level">
-        <option value="easy">Easy</option>
-        <option value="hard">Hard</option>
-    </select>
-    <button onclick="startGame()">▶ Start</button>
-</div>
-
-<!-- HUD -->
 <div id="hud">
     ❤️ Health
     <div id="bar"><span></span></div>
     🩸 Bites: <span id="bite">0</span>/10<br>
-    ⭐ Score: <span id="score">0</span><br>
-    🏆 High: <span id="hs">0</span><br>
-    <button onclick="restartGame()">🔄 Restart</button>
+    ⭐ Score: <span id="score">0</span>
 </div>
 
-<!-- GAME -->
 <div id="game">
     <img id="human" src="human.png">
 </div>
 
-<!-- FAST HIT SOUND -->
 <audio id="hitSound" src="hit.mp3" preload="auto"></audio>
 
 <script>
-let score, bite, health;
-let highScore = localStorage.getItem("highScore") || 0;
-let spawnSpeed, moveSpeed, biteDelay;
-let spawnLoop;
-
-document.getElementById("hs").innerText = highScore;
-
-function startGame() {
-    document.getElementById("menu").style.display = "none";
-    restartGame();
-}
-
-function restartGame() {
-    clearInterval(spawnLoop);
-    document.querySelectorAll(".bee").forEach(b => b.remove());
-
-    score = 0;
-    bite = 0;
-    health = 100;
-
-    document.getElementById("score").innerText = score;
-    document.getElementById("bite").innerText = bite;
-    document.querySelector("#bar span").style.width = "100%";
-
-    let level = document.getElementById("level").value;
-    if (level === "easy") {
-        spawnSpeed = 2500;
-        moveSpeed = 0.3;
-        biteDelay = 3500;
-    } else {
-        spawnSpeed = 1400;
-        moveSpeed = 0.7;
-        biteDelay = 2000;
-    }
-
-    spawnLoop = setInterval(createBee, spawnSpeed);
-}
-
-function endGame() {
-    clearInterval(spawnLoop);
-    alert("Game Over!\nScore: " + score);
-    document.getElementById("menu").style.display = "flex";
-}
+let health = 100;
+let bite = 0;
+let score = 0;
 
 function createBee() {
     let bee = document.createElement("img");
@@ -160,7 +85,7 @@ function createBee() {
     bee.className = "bee";
 
     bee.style.left = Math.random() * window.innerWidth + "px";
-    bee.style.top = Math.random() * window.innerHeight + "px";
+    bee.style.top  = Math.random() * window.innerHeight + "px";
 
     document.getElementById("game").appendChild(bee);
 
@@ -172,16 +97,16 @@ function createBee() {
         let hx = human.offsetLeft;
         let hy = human.offsetTop;
 
-        bee.style.left = bx + (hx - bx) * moveSpeed * 0.02 + "px";
-        bee.style.top  = by + (hy - by) * moveSpeed * 0.02 + "px";
-    }, 40);
+        // move toward human
+        bee.style.left = bx + (hx - bx) * 0.05 + "px";
+        bee.style.top  = by + (hy - by) * 0.05 + "px";
 
-    // AUTO BITE + SOUND
-    setTimeout(() => {
-        if (document.body.contains(bee)) {
+        // COLLISION CHECK
+        if (isCollide(bee, human)) {
+            // 🔊 SOUND ON HIT
             let s = document.getElementById("hitSound");
             s.currentTime = 0;
-            s.play(); // 🔊 SOUND ON HIT
+            s.play();
 
             bite++;
             score++;
@@ -191,19 +116,32 @@ function createBee() {
             document.getElementById("score").innerText = score;
             document.querySelector("#bar span").style.width = health + "%";
 
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem("highScore", highScore);
-                document.getElementById("hs").innerText = highScore;
-            }
-
             clearInterval(move);
             bee.remove();
 
-            if (bite >= 10) endGame();
+            if (bite >= 10) {
+                alert("Game Over");
+            }
         }
-    }, biteDelay);
+
+    }, 30);
 }
+
+// COLLISION FUNCTION
+function isCollide(a, b) {
+    let r1 = a.getBoundingClientRect();
+    let r2 = b.getBoundingClientRect();
+
+    return !(
+        r1.right < r2.left ||
+        r1.left > r2.right ||
+        r1.bottom < r2.top ||
+        r1.top > r2.bottom
+    );
+}
+
+// spawn bees
+setInterval(createBee, 2000);
 </script>
 
 </body>
