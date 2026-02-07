@@ -1,43 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Bee Bite Game</title>
+<title>Bee Attack Game</title>
 
 <style>
 body {
     margin: 0;
-    height: 100vh;
-    background: radial-gradient(circle at top, #2b1055, #000);
-    color: #fff;
-    font-family: Arial, sans-serif;
     overflow: hidden;
+    background: linear-gradient(#1b2735, #090a0f);
+    font-family: Arial, sans-serif;
+    color: white;
 }
 
 #hud {
     position: fixed;
     top: 10px;
     left: 10px;
-    z-index: 9999;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.5);
     padding: 10px;
     border-radius: 10px;
+    z-index: 9999;
 }
 
 #bar {
     width: 180px;
     height: 12px;
-    background: #500;
+    background: #400;
     border-radius: 10px;
     overflow: hidden;
-    margin: 4px 0;
 }
 #bar span {
     display: block;
     height: 100%;
     width: 100%;
     background: linear-gradient(to right, lime, yellow);
-    transition: width 0.3s;
 }
 
 #menu {
@@ -49,11 +46,10 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 10000;
-    text-align: center;
 }
 
 button, select {
-    padding: 12px 22px;
+    padding: 12px 20px;
     font-size: 18px;
     margin: 8px;
     border-radius: 8px;
@@ -61,9 +57,9 @@ button, select {
 }
 
 #game {
-    position: relative;
     width: 100vw;
     height: 100vh;
+    position: relative;
 }
 
 #human {
@@ -78,7 +74,6 @@ button, select {
 .bee {
     position: absolute;
     width: 70px;
-    cursor: pointer;
     z-index: 9999;
 }
 </style>
@@ -88,12 +83,12 @@ button, select {
 
 <!-- MENU -->
 <div id="menu">
-    <h1>🐝 Bee Bite Game</h1>
+    <h1>🐝 Bee Attack</h1>
     <select id="level">
         <option value="easy">Easy</option>
         <option value="hard">Hard</option>
     </select>
-    <button onclick="startGame()">▶️ Start Game</button>
+    <button onclick="startGame()">▶ Start</button>
 </div>
 
 <!-- HUD -->
@@ -102,8 +97,7 @@ button, select {
     <div id="bar"><span></span></div>
     🩸 Bites: <span id="bite">0</span>/10<br>
     ⭐ Score: <span id="score">0</span><br>
-    🏆 High Score: <span id="hs">0</span><br>
-    ⏱️ Time: <span id="time">60</span>s<br>
+    🏆 High: <span id="hs">0</span><br>
     <button onclick="restartGame()">🔄 Restart</button>
 </div>
 
@@ -116,10 +110,10 @@ button, select {
 <audio id="hitSound" src="hit.mp3" preload="auto"></audio>
 
 <script>
-let score, bite, health, timeLeft;
+let score, bite, health;
 let highScore = localStorage.getItem("highScore") || 0;
-let spawnSpeed, biteDelay, moveSpeed;
-let gameInterval, timerInterval;
+let spawnSpeed, moveSpeed, biteDelay;
+let spawnLoop;
 
 document.getElementById("hs").innerText = highScore;
 
@@ -129,99 +123,81 @@ function startGame() {
 }
 
 function restartGame() {
-    clearInterval(gameInterval);
-    clearInterval(timerInterval);
+    clearInterval(spawnLoop);
     document.querySelectorAll(".bee").forEach(b => b.remove());
 
     score = 0;
     bite = 0;
     health = 100;
-    timeLeft = 60;
 
     document.getElementById("score").innerText = score;
     document.getElementById("bite").innerText = bite;
-    document.getElementById("time").innerText = timeLeft;
     document.querySelector("#bar span").style.width = "100%";
 
     let level = document.getElementById("level").value;
     if (level === "easy") {
         spawnSpeed = 2500;
+        moveSpeed = 0.3;
         biteDelay = 3500;
-        moveSpeed = 0.4;
     } else {
-        spawnSpeed = 1300;
+        spawnSpeed = 1400;
+        moveSpeed = 0.7;
         biteDelay = 2000;
-        moveSpeed = 0.8;
     }
 
-    gameInterval = setInterval(createBee, spawnSpeed);
-
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById("time").innerText = timeLeft;
-        if (timeLeft <= 0) endGame();
-    }, 1000);
+    spawnLoop = setInterval(createBee, spawnSpeed);
 }
 
 function endGame() {
-    clearInterval(gameInterval);
-    clearInterval(timerInterval);
-    alert("⏱️ Time Up!\nScore: " + score);
+    clearInterval(spawnLoop);
+    alert("Game Over!\nScore: " + score);
     document.getElementById("menu").style.display = "flex";
 }
 
 function createBee() {
     let bee = document.createElement("img");
-    bee.src = "./human2.png";
+    bee.src = "human2.png";
     bee.className = "bee";
 
-    let x = Math.random() * window.innerWidth;
-    let y = Math.random() * window.innerHeight;
-
-    bee.style.left = x + "px";
-    bee.style.top = y + "px";
+    bee.style.left = Math.random() * window.innerWidth + "px";
+    bee.style.top = Math.random() * window.innerHeight + "px";
 
     document.getElementById("game").appendChild(bee);
 
     let human = document.getElementById("human");
 
-    let moveInterval = setInterval(() => {
+    let move = setInterval(() => {
         let bx = bee.offsetLeft;
         let by = bee.offsetTop;
         let hx = human.offsetLeft;
         let hy = human.offsetTop;
 
-        let dx = hx - bx;
-        let dy = hy - by;
+        bee.style.left = bx + (hx - bx) * moveSpeed * 0.02 + "px";
+        bee.style.top  = by + (hy - by) * moveSpeed * 0.02 + "px";
+    }, 40);
 
-        bee.style.left = bx + dx * moveSpeed * 0.02 + "px";
-        bee.style.top  = by + dy * moveSpeed * 0.02 + "px";
-    }, 50);
-
-    bee.onclick = () => {
-        score++;
-        document.getElementById("score").innerText = score;
-
-        let s = document.getElementById("hitSound");
-        s.currentTime = 0; // ultra fast
-        s.play();
-
-        if (score > highScore) {
-            highScore = score;
-            localStorage.setItem("highScore", highScore);
-            document.getElementById("hs").innerText = highScore;
-        }
-        clearInterval(moveInterval);
-        bee.remove();
-    };
-
+    // AUTO BITE + SOUND
     setTimeout(() => {
         if (document.body.contains(bee)) {
+            let s = document.getElementById("hitSound");
+            s.currentTime = 0;
+            s.play(); // 🔊 SOUND ON HIT
+
             bite++;
+            score++;
             health -= 10;
+
             document.getElementById("bite").innerText = bite;
+            document.getElementById("score").innerText = score;
             document.querySelector("#bar span").style.width = health + "%";
-            clearInterval(moveInterval);
+
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("highScore", highScore);
+                document.getElementById("hs").innerText = highScore;
+            }
+
+            clearInterval(move);
             bee.remove();
 
             if (bite >= 10) endGame();
