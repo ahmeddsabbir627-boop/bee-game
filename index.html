@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tap Human Game</title>
+<style>
+body{
+margin:0;
+background:#111;
+color:white;
+font-family:Arial;
+overflow:hidden;
+}
+#login{text-align:center;margin-top:120px;}
+input,button{padding:10px;font-size:16px;}
+#game{display:none;height:100vh;position:relative;}
+#info{position:fixed;top:10px;left:10px;}
+#healthBox{position:fixed;top:10px;right:10px;width:120px;height:15px;border:2px solid #fff;}
+#health{height:100%;background:lime;width:100%;}
+#human{position:absolute;top:30%;left:50%;transform:translateX(-50%);width:120px;}
+#human2{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);width:110px;cursor:pointer;}
+.bee{position:absolute;width:50px;}
+.bite{animation:shake .3s;}
+@keyframes shake{
+0%{transform:translateX(-50%) translateX(-5px);}
+50%{transform:translateX(-50%) translateX(5px);}
+100%{transform:translateX(-50%) translateX(0);}
+}
+.flash{background:rgba(255,0,0,.4);}
+</style>
+</head>
+
+<body>
+
+<div id="login">
+<h2>Tap Human Game</h2>
+<input id="username" placeholder="Username"><br><br>
+<button onclick="startGame()">START</button>
+</div>
+
+<div id="game">
+<div id="info">
+🐝 Bite: <span id="bite">0</span>/10<br>
+👊 Point: <span id="point">0</span><br>
+🏆 High: <span id="high">0</span>
+</div>
+
+<div id="healthBox"><div id="health"></div></div>
+
+<img src="human.png" id="human">
+<img src="human2.png" id="human2">
+
+<img src="https://i.imgur.com/4AiXzf8.png" class="bee">
+<img src="https://i.imgur.com/4AiXzf8.png" class="bee">
+<img src="https://i.imgur.com/4AiXzf8.png" class="bee">
+</div>
+
+<audio id="hitSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
+<audio id="biteSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+
+<script>
+let bite=0,point=0,maxBite=10;
+let high=localStorage.getItem("high")||0;
+document.getElementById("high").innerText=high;
+
+function startGame(){
+if(!username.value)return alert("Username dao");
+login.style.display="none";
+game.style.display="block";
+moveBees();
+}
+
+function moveBees(){
+document.querySelectorAll(".bee").forEach(b=>{
+setInterval(()=>{
+b.style.top=Math.random()*80+"%";
+b.style.left=Math.random()*80+"%";
+},600);
+});
+}
+
+setInterval(()=>{
+if(bite>=maxBite)return;
+bite++;
+biteSound.play();
+biteSpan.innerText=bite;
+health.style.width=(100-bite*10)+"%";
+health.style.background=bite<7?"lime":"red";
+human.classList.add("bite");
+game.classList.add("flash");
+setTimeout(()=>{
+human.classList.remove("bite");
+game.classList.remove("flash");
+},300);
+if(bite==maxBite){
+if(point>high)localStorage.setItem("high",point);
+alert("GAME OVER\nScore: "+point);
+}
+},2000);
+
+human2.onclick=()=>{
+if(bite>=maxBite)return;
+point++;
+pointSpan.innerText=point;
+hitSound.play();
+}
+
+const biteSpan=document.getElementById("bite");
+const pointSpan=document.getElementById("point");
+</script>
+</body>
+</html>
