@@ -112,7 +112,8 @@ button, select {
     <img id="human" src="human.png">
 </div>
 
-<audio id="hitSound" src="hit.mp3"></audio>
+<!-- FAST HIT SOUND -->
+<audio id="hitSound" src="hit.mp3" preload="auto"></audio>
 
 <script>
 let score, bite, health, timeLeft;
@@ -187,7 +188,6 @@ function createBee() {
     let moveInterval = setInterval(() => {
         let bx = bee.offsetLeft;
         let by = bee.offsetTop;
-
         let hx = human.offsetLeft;
         let hy = human.offsetTop;
 
@@ -201,7 +201,10 @@ function createBee() {
     bee.onclick = () => {
         score++;
         document.getElementById("score").innerText = score;
-        document.getElementById("hitSound").play();
+
+        let s = document.getElementById("hitSound");
+        s.currentTime = 0; // ultra fast
+        s.play();
 
         if (score > highScore) {
             highScore = score;
