@@ -1,112 +1,231 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Tap Human Game</title>
+<title>Bee Bite Game</title>
+
 <style>
-body{
-margin:0;
-background:#111;
-color:white;
-font-family:Arial;
-overflow:hidden;
+body {
+    margin: 0;
+    height: 100vh;
+    background: radial-gradient(circle at top, #2b1055, #000);
+    color: #fff;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
 }
-#login{text-align:center;margin-top:120px;}
-input,button{padding:10px;font-size:16px;}
-#game{display:none;height:100vh;position:relative;}
-#info{position:fixed;top:10px;left:10px;}
-#healthBox{position:fixed;top:10px;right:10px;width:120px;height:15px;border:2px solid #fff;}
-#health{height:100%;background:lime;width:100%;}
-#human{position:absolute;top:30%;left:50%;transform:translateX(-50%);width:120px;}
-#human2{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);width:110px;cursor:pointer;}
-.bee{position:absolute;width:50px;}
-.bite{animation:shake .3s;}
-@keyframes shake{
-0%{transform:translateX(-50%) translateX(-5px);}
-50%{transform:translateX(-50%) translateX(5px);}
-100%{transform:translateX(-50%) translateX(0);}
+
+#hud {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 9999;
+    background: rgba(0,0,0,0.4);
+    padding: 10px;
+    border-radius: 10px;
 }
-.flash{background:rgba(255,0,0,.4);}
+
+#bar {
+    width: 180px;
+    height: 12px;
+    background: #500;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 4px 0;
+}
+#bar span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(to right, lime, yellow);
+    transition: width 0.3s;
+}
+
+#menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    text-align: center;
+}
+
+button, select {
+    padding: 12px 22px;
+    font-size: 18px;
+    margin: 8px;
+    border-radius: 8px;
+    border: none;
+}
+
+#game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+#human {
+    position: absolute;
+    width: 200px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.bee {
+    position: absolute;
+    width: 70px;
+    cursor: pointer;
+    z-index: 9999;
+}
 </style>
 </head>
 
 <body>
 
-<div id="login">
-<h2>Tap Human Game</h2>
-<input id="username" placeholder="Username"><br><br>
-<button onclick="startGame()">START</button>
+<!-- MENU -->
+<div id="menu">
+    <h1>🐝 Bee Bite Game</h1>
+    <select id="level">
+        <option value="easy">Easy</option>
+        <option value="hard">Hard</option>
+    </select>
+    <button onclick="startGame()">▶️ Start Game</button>
 </div>
 
+<!-- HUD -->
+<div id="hud">
+    ❤️ Health
+    <div id="bar"><span></span></div>
+    🩸 Bites: <span id="bite">0</span>/10<br>
+    ⭐ Score: <span id="score">0</span><br>
+    🏆 High Score: <span id="hs">0</span><br>
+    ⏱️ Time: <span id="time">60</span>s<br>
+    <button onclick="restartGame()">🔄 Restart</button>
+</div>
+
+<!-- GAME -->
 <div id="game">
-<div id="info">
-🐝 Bite: <span id="bite">0</span>/10<br>
-👊 Point: <span id="point">0</span><br>
-🏆 High: <span id="high">0</span>
+    <img id="human" src="human.png">
 </div>
 
-<div id="healthBox"><div id="health"></div></div>
-
-<img src="human.png" id="human">
-<img src="human2.png" id="human2">
-
-<img src="https://i.imgur.com/4AiXzf8.png" class="bee">
-<img src="https://i.imgur.com/4AiXzf8.png" class="bee">
-<img src="https://i.imgur.com/4AiXzf8.png" class="bee">
-</div>
-
-<audio id="hitSound" src="https://www.soundjay.com/buttons/sounds/button-16.mp3"></audio>
-<audio id="biteSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+<audio id="hitSound" src="hit.mp3"></audio>
 
 <script>
-let bite=0,point=0,maxBite=10;
-let high=localStorage.getItem("high")||0;
-document.getElementById("high").innerText=high;
+let score, bite, health, timeLeft;
+let highScore = localStorage.getItem("highScore") || 0;
+let spawnSpeed, biteDelay, moveSpeed;
+let gameInterval, timerInterval;
 
-function startGame(){
-if(!username.value)return alert("Username dao");
-login.style.display="none";
-game.style.display="block";
-moveBees();
+document.getElementById("hs").innerText = highScore;
+
+function startGame() {
+    document.getElementById("menu").style.display = "none";
+    restartGame();
 }
 
-function moveBees(){
-document.querySelectorAll(".bee").forEach(b=>{
-setInterval(()=>{
-b.style.top=Math.random()*80+"%";
-b.style.left=Math.random()*80+"%";
-},600);
-});
+function restartGame() {
+    clearInterval(gameInterval);
+    clearInterval(timerInterval);
+    document.querySelectorAll(".bee").forEach(b => b.remove());
+
+    score = 0;
+    bite = 0;
+    health = 100;
+    timeLeft = 60;
+
+    document.getElementById("score").innerText = score;
+    document.getElementById("bite").innerText = bite;
+    document.getElementById("time").innerText = timeLeft;
+    document.querySelector("#bar span").style.width = "100%";
+
+    let level = document.getElementById("level").value;
+    if (level === "easy") {
+        spawnSpeed = 2500;
+        biteDelay = 3500;
+        moveSpeed = 0.4;
+    } else {
+        spawnSpeed = 1300;
+        biteDelay = 2000;
+        moveSpeed = 0.8;
+    }
+
+    gameInterval = setInterval(createBee, spawnSpeed);
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById("time").innerText = timeLeft;
+        if (timeLeft <= 0) endGame();
+    }, 1000);
 }
 
-setInterval(()=>{
-if(bite>=maxBite)return;
-bite++;
-biteSound.play();
-biteSpan.innerText=bite;
-health.style.width=(100-bite*10)+"%";
-health.style.background=bite<7?"lime":"red";
-human.classList.add("bite");
-game.classList.add("flash");
-setTimeout(()=>{
-human.classList.remove("bite");
-game.classList.remove("flash");
-},300);
-if(bite==maxBite){
-if(point>high)localStorage.setItem("high",point);
-alert("GAME OVER\nScore: "+point);
-}
-},2000);
-
-human2.onclick=()=>{
-if(bite>=maxBite)return;
-point++;
-pointSpan.innerText=point;
-hitSound.play();
+function endGame() {
+    clearInterval(gameInterval);
+    clearInterval(timerInterval);
+    alert("⏱️ Time Up!\nScore: " + score);
+    document.getElementById("menu").style.display = "flex";
 }
 
-const biteSpan=document.getElementById("bite");
-const pointSpan=document.getElementById("point");
+function createBee() {
+    let bee = document.createElement("img");
+    bee.src = "./human2.png";
+    bee.className = "bee";
+
+    let x = Math.random() * window.innerWidth;
+    let y = Math.random() * window.innerHeight;
+
+    bee.style.left = x + "px";
+    bee.style.top = y + "px";
+
+    document.getElementById("game").appendChild(bee);
+
+    let human = document.getElementById("human");
+
+    let moveInterval = setInterval(() => {
+        let bx = bee.offsetLeft;
+        let by = bee.offsetTop;
+
+        let hx = human.offsetLeft;
+        let hy = human.offsetTop;
+
+        let dx = hx - bx;
+        let dy = hy - by;
+
+        bee.style.left = bx + dx * moveSpeed * 0.02 + "px";
+        bee.style.top  = by + dy * moveSpeed * 0.02 + "px";
+    }, 50);
+
+    bee.onclick = () => {
+        score++;
+        document.getElementById("score").innerText = score;
+        document.getElementById("hitSound").play();
+
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem("highScore", highScore);
+            document.getElementById("hs").innerText = highScore;
+        }
+        clearInterval(moveInterval);
+        bee.remove();
+    };
+
+    setTimeout(() => {
+        if (document.body.contains(bee)) {
+            bite++;
+            health -= 10;
+            document.getElementById("bite").innerText = bite;
+            document.querySelector("#bar span").style.width = health + "%";
+            clearInterval(moveInterval);
+            bee.remove();
+
+            if (bite >= 10) endGame();
+        }
+    }, biteDelay);
+}
 </script>
+
 </body>
 </html>
