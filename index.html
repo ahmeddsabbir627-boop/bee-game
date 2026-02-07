@@ -2,15 +2,25 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Bee Collision Game</title>
+<title>Bee Hit Game</title>
 
 <style>
 body {
     margin: 0;
     overflow: hidden;
-    background: radial-gradient(circle, #243949, #000);
+    background: radial-gradient(circle, #1f4037, #000);
     font-family: Arial, sans-serif;
     color: white;
+}
+
+#menu {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
 }
 
 #hud {
@@ -55,12 +65,21 @@ body {
 .bee {
     position: absolute;
     width: 70px;
+    cursor: pointer;
 }
 </style>
 </head>
 
 <body>
 
+<!-- START -->
+<div id="menu">
+    <button onclick="startGame()" style="font-size:22px;padding:15px;">
+        ▶ Start Game
+    </button>
+</div>
+
+<!-- HUD -->
 <div id="hud">
     ❤️ Health
     <div id="bar"><span></span></div>
@@ -68,18 +87,37 @@ body {
     ⭐ Score: <span id="score">0</span>
 </div>
 
+<!-- GAME -->
 <div id="game">
     <img id="human" src="human.png">
 </div>
 
+<!-- SOUNDS -->
 <audio id="hitSound" src="hit.mp3" preload="auto"></audio>
+<audio id="dieSound" src="die.mp3" preload="auto"></audio>
 
 <script>
 let health = 100;
 let bite = 0;
 let score = 0;
+let gameRunning = false;
 
+// 🔓 unlock sound
+function startGame() {
+    let s = document.getElementById("hitSound");
+    s.play().then(() => {
+        s.pause();
+        s.currentTime = 0;
+    }).catch(()=>{});
+
+    document.getElementById("menu").style.display = "none";
+    gameRunning = true;
+}
+
+// create bee
 function createBee() {
+    if (!gameRunning) return;
+
     let bee = document.createElement("img");
     bee.src = "human2.png";
     bee.className = "bee";
@@ -91,29 +129,31 @@ function createBee() {
 
     let human = document.getElementById("human");
 
+    // 🐝 TAP = DIE SOUND
+    bee.onclick = () => {
+        playDieSound();
+        score++;
+        document.getElementById("score").innerText = score;
+        bee.remove();
+    };
+
+    // MOVE + COLLISION
     let move = setInterval(() => {
         let bx = bee.offsetLeft;
         let by = bee.offsetTop;
         let hx = human.offsetLeft;
         let hy = human.offsetTop;
 
-        // move toward human
         bee.style.left = bx + (hx - bx) * 0.05 + "px";
         bee.style.top  = by + (hy - by) * 0.05 + "px";
 
-        // COLLISION CHECK
+        // 🧍 AUTO HIT = HIT SOUND
         if (isCollide(bee, human)) {
-            // 🔊 SOUND ON HIT
-            let s = document.getElementById("hitSound");
-            s.currentTime = 0;
-            s.play();
-
+            playHitSound();
             bite++;
-            score++;
             health -= 10;
 
             document.getElementById("bite").innerText = bite;
-            document.getElementById("score").innerText = score;
             document.querySelector("#bar span").style.width = health + "%";
 
             clearInterval(move);
@@ -121,17 +161,29 @@ function createBee() {
 
             if (bite >= 10) {
                 alert("Game Over");
+                location.reload();
             }
         }
-
     }, 30);
 }
 
-// COLLISION FUNCTION
+// 🔊 sounds
+function playHitSound() {
+    let s = document.getElementById("hitSound");
+    s.currentTime = 0;
+    s.play();
+}
+
+function playDieSound() {
+    let s = document.getElementById("dieSound");
+    s.currentTime = 0;
+    s.play();
+}
+
+// collision
 function isCollide(a, b) {
     let r1 = a.getBoundingClientRect();
     let r2 = b.getBoundingClientRect();
-
     return !(
         r1.right < r2.left ||
         r1.left > r2.right ||
